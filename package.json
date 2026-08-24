@@ -8,7 +8,21 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "server:go": "cd backend && go run ./cmd/server/main.go",
+    "server:go:build": "cd backend && go build -o bin/autotax-server.exe ./cmd/server",
+    "server:go:test": "cd backend && go test -v ./internal/engine/...",
+    "server:go:bench": "cd backend/internal/engine && go test -bench=. -benchmem",
+    "mock:server": "tsx mock-server/server.ts",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "services:build": "cd backend && go build -o bin/gateway.exe ./cmd/gateway && go build -o bin/tenant-service.exe ./cmd/tenant-service && go build -o bin/ingest-service.exe ./cmd/ingest-service && go build -o bin/recon-service.exe ./cmd/recon-service && go build -o bin/invoicing-service.exe ./cmd/invoicing-service",
+    "services:gateway": "cd backend && go run ./cmd/gateway/main.go",
+    "services:tenant": "cd backend && go run ./cmd/tenant-service/main.go",
+    "services:ingest": "cd backend && go run ./cmd/ingest-service/main.go",
+    "services:recon": "cd backend && go run ./cmd/recon-service/main.go",
+    "services:invoicing": "cd backend && go run ./cmd/invoicing-service/main.go"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
