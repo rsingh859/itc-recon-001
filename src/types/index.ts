@@ -168,3 +168,59 @@ export interface CopilotInsight {
   recommendedCommand: string;
 }
 
+export interface User {
+  id: string;
+  tenantId: string;
+  email: string;
+  fullName: string;
+  role: 'FINANCE_DIRECTOR' | 'TAX_ACCOUNTANT' | 'AUDITOR' | 'STORE_MANAGER';
+  authProvider: 'LOCAL' | 'GOOGLE' | 'MICROSOFT';
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  token: string;
+  tokenType: string;
+  expiresIn: number;
+  user: User;
+  dealership?: DealershipProfile;
+  tenantId: string;
+  activeGstin: string;
+}
+
+export interface ExtractedInvoiceData {
+  invoiceNo: string;
+  invoiceDate: string;
+  supplierGstin: string;
+  supplierName: string;
+  buyerGstin: string;
+  category: string;
+  taxableValue: number;
+  igst: number;
+  cgst: number;
+  sgst: number;
+  cess: number;
+  totalTax: number;
+  totalAmount: number;
+  confidenceScore: number;
+  rawTextSnippet?: string;
+}
+
+export interface DocumentUpload {
+  id: string;
+  tenantId: string;
+  branchGstin: string;
+  fileName: string;
+  fileType: string;
+  fileSizeBytes: number;
+  storagePath: string;
+  sha256Hash: string;
+  ocrStatus: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  extractedData?: ExtractedInvoiceData;
+  uploadedBy?: string;
+  createdAt: string;
+}
+
+
