@@ -1,0 +1,5 @@
+bin/
+*.exe
+.git
+.DS_Store
+tmp/

@@ -111,8 +111,40 @@ recon-001-improved/
 
 ## 4. Local Development Workflows
 
-### Option A: Standard Full Microservices Mode (Recommended)
-This runs the full distributed Go mesh behind the API Gateway on port `:8080`:
+### Option A: One-Command Full Docker Mesh (Recommended for Local Testing)
+Orchestrates the entire platform in Docker (PostgreSQL 16, Redis 7, 4 Go microservices, API Gateway, and React 19 Frontend) with isolated networking and healthchecks:
+
+```powershell
+# 1. Start all 8 containers in the background
+npm run docker:up            # or: docker compose up -d --build
+
+# 2. Inspect container status and health
+npm run docker:ps            # or: docker compose ps
+
+# 3. Stream logs across all services
+npm run docker:logs          # or: docker compose logs -f
+
+# 4. Stop and clean up all services together
+npm run docker:down          # or: docker compose down
+```
+- **Frontend UI:** `http://localhost:3000`
+- **Public API Gateway:** `http://localhost:8080/healthz`
+- **PostgreSQL 16:** `localhost:5432` (User: `autotax`, DB: `autotax_db`)
+- **Redis 7:** `localhost:6379`
+
+---
+
+### Option B: One-Command Concurrent Native Mesh
+Starts PostgreSQL and Redis in Docker, and runs all 5 Go microservices + React frontend concurrently in a single terminal with colored output and automated cleanup on Ctrl+C:
+
+```powershell
+npm run dev:all
+```
+
+---
+
+### Option C: Manual Multi-Terminal Microservices Mode
+This runs the full distributed Go mesh natively behind the API Gateway on port `:8080`:
 
 ```powershell
 # 1. Start PostgreSQL 16 and Redis 7 in background
@@ -132,7 +164,9 @@ npm run services:gateway     # Port 8080 (Public Gateway)
 npm run dev                  # Port 3000
 ```
 
-### Option B: All-in-One Go Server Mode (Fastest for Backend Development)
+---
+
+### Option D: All-in-One Go Server Mode (Fastest for Backend Development)
 Runs all domain capabilities inside a single native Go binary on `:8080` with zero external dependencies (uses in-memory fallback store if `DATABASE_URL` is omitted):
 
 ```powershell
@@ -143,7 +177,9 @@ npm run server:go            # Port 8080
 npm run dev                  # Port 3000
 ```
 
-### Option C: Mock Server Mode (For Frontend-Only Work)
+---
+
+### Option E: Mock Server Mode (For Frontend-Only Work)
 If you are developing UI components without building Go:
 
 ```powershell
@@ -153,6 +189,7 @@ npm run mock:server          # Port 8081
 # Terminal 2: Launch Vite React frontend
 npm run dev                  # Port 3000
 ```
+
 
 ---
 
