@@ -1,4 +1,7 @@
 services:
+  # ==========================================
+  # Storage & Cache Layer
+  # ==========================================
   postgres:
     image: postgres:16-alpine
     container_name: autotax-postgres
@@ -17,6 +20,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - autotax-network
 
   redis:
     image: redis:7-alpine
@@ -31,9 +36,204 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - autotax-network
+
+  # ==========================================
+  # Domain Microservices Mesh
+  # ==========================================
+  tenant-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE: tenant-service
+    container_name: autotax-tenant-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      PORT: "8081"
+      DATABASE_URL: "postgres://autotax:autotax_secure_pass_2026@postgres:5432/autotax_db?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - autotax-network
+
+  ingest-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE: ingest-service
+    container_name: autotax-ingest-service
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      PORT: "8082"
+      DATABASE_URL: "postgres://autotax:autotax_secure_pass_2026@postgres:5432/autotax_db?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - autotax-network
+
+  recon-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE: recon-service
+    container_name: autotax-recon-service
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      PORT: "8083"
+      DATABASE_URL: "postgres://autotax:autotax_secure_pass_2026@postgres:5432/autotax_db?sslmode=disable"
+      REDIS_URL: "redis://redis:6379"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8083/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - autotax-network
+
+  invoicing-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE: invoicing-service
+    container_name: autotax-invoicing-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      PORT: "8084"
+      DATABASE_URL: "postgres://autotax:autotax_secure_pass_2026@postgres:5432/autotax_db?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8084/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - autotax-network
+
+  # ==========================================
+  # Public API Gateway Layer
+  # ==========================================
+  gateway:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE: gateway
+    container_name: autotax-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      TENANT_SERVICE_URL: "http://tenant-service:8081"
+      INGEST_SERVICE_URL: "http://ingest-service:8082"
+      RECON_SERVICE_URL: "http://recon-service:8083"
+      INVOICING_SERVICE_URL: "http://invoicing-service:8084"
+    depends_on:
+      tenant-service:
+        condition: service_healthy
+      ingest-service:
+        condition: service_healthy
+      recon-service:
+        condition: service_healthy
+      invoicing-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - autotax-network
+
+  # ==========================================
+  # Frontend App Shell (React 19 + Vite)
+  # ==========================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autotax-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_BACKEND_TARGET: "http://gateway:8080"
+    depends_on:
+      gateway:
+        condition: service_healthy
+    networks:
+      - autotax-network
+
+  # ==========================================
+  # Optional All-in-One Unified Server Mode
+  # ==========================================
+  server:
+    profiles: ["monolith"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE: server
+    container_name: autotax-unified-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      DATABASE_URL: "postgres://autotax:autotax_secure_pass_2026@postgres:5432/autotax_db?sslmode=disable"
+      REDIS_URL: "redis://redis:6379"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/healthz || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - autotax-network
 
 volumes:
   autotax_pgdata:
     name: autotax_pgdata
   autotax_redisdata:
     name: autotax_redisdata
+
+networks:
+  autotax-network:
+    name: autotax-network
+    driver: bridge

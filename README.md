@@ -11,7 +11,34 @@ TaxDrive is a high-throughput, microsecond-latency GST Reconciliation, Outbound 
 
 ## Quickstart
 
-### Option 1: Full Microservices Mesh Mode (Recommended)
+### Option 1: One-Command Full Docker Mesh (Recommended for Local Testing)
+Starts all 8 services together in Docker (PostgreSQL 16, Redis 7, 4 Go microservices, API Gateway, and React 19 Frontend):
+```powershell
+# Start everything in background
+npm run docker:up          # or: docker compose up -d --build
+
+# View logs for all services
+npm run docker:logs        # or: docker compose logs -f
+
+# Check running container health status
+npm run docker:ps          # or: docker compose ps
+
+# Stop and clean up all services together
+npm run docker:down        # or: docker compose down
+```
+Open **http://localhost:3000** for the UI or **http://localhost:8080/healthz** for API Gateway health.
+
+---
+
+### Option 2: One-Command Concurrent Native Mesh
+Boots PostgreSQL + Redis in Docker, and launches all Go microservices + Frontend concurrently in a single terminal with automatic process cleanup on Ctrl+C:
+```powershell
+npm run dev:all
+```
+
+---
+
+### Option 3: Manual Multi-Terminal Microservices Mode
 ```powershell
 # 1. Start PostgreSQL 16 & Redis 7 in Docker
 npm run db:up
@@ -30,7 +57,9 @@ npm run services:gateway     # Port 8080 (Public API Gateway)
 npm run dev                  # Port 3000
 ```
 
-### Option 2: Unified All-in-One Server Mode (Fastest)
+---
+
+### Option 4: Unified All-in-One Server Mode (Fastest for Go dev)
 ```powershell
 # Terminal 1: Unified Go backend (with automatic in-memory fallback if no DB)
 npm run server:go            # Port 8080
